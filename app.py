@@ -11,6 +11,7 @@ st.set_page_config(
 )
 
 # --- 2. QUẢN LÝ DỮ LIỆU TẠM THỜI (SESSION STATE) ---
+# Để web hoạt động giống Facebook ngay lập tức mà chưa cần Database phức tạp
 if 'posts' not in st.session_state:
     st.session_state.posts = [
         {
@@ -133,15 +134,18 @@ def main():
             submit_btn = st.form_submit_button("Đăng Lên Tường 🚀")
             
             if submit_btn and uploaded_file and caption:
+                # Xử lý file để hiển thị ngay lập tức
                 bytes_data = uploaded_file.getvalue()
+                # Chuyển đổi sang base64 để hiển thị mà không cần lưu file
                 b64_data = base64.b64encode(bytes_data).decode()
                 
                 file_type = "video" if uploaded_file.type.startswith("video") else "image"
                 mime_type = uploaded_file.type
                 
+                # Tạo object bài viết mới
                 new_post = {
                     "type": file_type,
-                    "data": b64_data,
+                    "data": b64_data, # Lưu data base64
                     "mime": mime_type,
                     "caption": caption,
                     "author": author,
@@ -149,38 +153,38 @@ def main():
                     "likes": 0
                 }
                 
+                # Thêm vào đầu danh sách (Mới nhất lên đầu)
                 st.session_state.posts.insert(0, new_post)
                 st.success("Đã đăng thành công!")
                 st.rerun()
 
     st.markdown("---")
 
-    # --- 5. HIỂN THỊ NEWS FEED ---
-    if not st.session_state.posts:
-        st.info("Chưa có bài viết nào. Hãy là người đầu tiên đăng bài nhé!")
-    
+    # --- 5. HIỂN THỊ NEWS FEED (GIỐNG TIKTOK/FB) ---
     for i, post in enumerate(st.session_state.posts):
         st.markdown(f"""
         <div class="post-card">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <div class="author-name">{post['author']}</div>
+                    <div class="author-name">Avatar: {post['author']}</div>
                     <div class="post-date">{post['date']}</div>
                 </div>
                 <div style="font-size: 1.5rem;">❤️</div>
             </div>
-            <hr style="border-color: rgba(255,255,255,0.2); margin: 10px 0;">
+            <hr style="border-color: rgba(255,255,255,0.2);">
             <div class="post-caption">{post['caption']}</div>
         </div>
         """, unsafe_allow_html=True)
 
+        # Hiển thị Media (Ảnh hoặc Video)
         if post['type'] == 'image':
-            if 'url' in post:
+            if 'url' in post: # Ảnh mẫu ban đầu
                 st.image(post['url'], use_column_width=True)
-            else:
+            else: # Ảnh người dùng upload
                 st.markdown(f'<img src="data:{post["mime"]};base64,{post["data"]}" style="width:100%; border-radius: 10px;">', unsafe_allow_html=True)
         
         elif post['type'] == 'video':
+            # Video player
             st.markdown(f"""
                 <video width="100%" controls style="border-radius: 10px;">
                     <source src="data:{post['mime']};base64,{post['data']}" type="{post['mime']}">
@@ -188,12 +192,13 @@ def main():
                 </video>
             """, unsafe_allow_html=True)
             
-        col1, col2 = st.columns([1, 4])
+        # Nút tương tác giả lập
+        col1, col2, col3 = st.columns([1,1,4])
         with col1:
-            if st.button(f"Yêu thích", key=f"like_{i}"):
-                st.toast("Đã thả tim! ❤️")
+            if st.button(f"Yêu thích ({post.get('likes', 0)})", key=f"like_{i}"):
+                st.toast("Bạn đã thả tim! ❤️")
         
-        st.markdown("<div style='height: 30px'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height: 20px'></div>", unsafe_allow_html=True) # Khoảng cách
 
 if __name__ == "__main__":
     main()
