@@ -1,190 +1,199 @@
 import streamlit as st
-import time
 from datetime import datetime
-from PIL import Image, ImageDraw, ImageFont
-import io
+import base64
 
-# --- 1. CẤU HÌNH TRANG (PHẢI ĐỂ ĐẦU TIÊN) ---
+# --- 1. CẤU HÌNH TRANG ---
 st.set_page_config(
-    page_title="Hộp Thời Gian Tết Bính Ngọ 2026",
-    page_icon="🏮",
+    page_title="Bảo & Yến - Our Memories",
+    page_icon="💑",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
 
-# --- 2. HÀM TẠO ẢNH THIỆP (TÍNH NĂNG PRO) ---
-def create_wish_card(name, content):
-    # Tạo nền đỏ
-    width, height = 800, 600
-    img = Image.new('RGB', (width, height), color='#8B0000')
-    d = ImageDraw.Draw(img)
-    
-    # Vẽ khung vàng
-    d.rectangle([20, 20, width-20, height-20], outline="#FFD700", width=5)
-    d.rectangle([30, 30, width-30, height-30], outline="#FFD700", width=2)
-    
-    # Do Streamlit Cloud không có sẵn font tiếng Việt đẹp, ta dùng font mặc định nhưng canh chỉnh khéo
-    # Tiêu đề
-    d.text((width/2, 100), "CHÚC MỪNG NĂM MỚI", fill="#FFD700", anchor="mm", font_size=60)
-    d.text((width/2, 180), "2026", fill="#FFD700", anchor="mm", font_size=80)
-    
-    # Nội dung điều ước (Cắt dòng nếu quá dài)
-    import textwrap
-    lines = textwrap.wrap(content, width=40) # Tự xuống dòng
-    y_text = 280
-    for line in lines:
-        d.text((width/2, y_text), line, fill="white", anchor="mm", font_size=40)
-        y_text += 50
-        
-    # Tên người gửi
-    d.text((width/2, height-100), f"Người gửi: {name}", fill="#FFD700", anchor="mm", font_size=30)
-    
-    # Chuyển ảnh thành bytes để hiển thị lên web
-    img_byte_arr = io.BytesIO()
-    img.save(img_byte_arr, format='PNG')
-    return img_byte_arr.getvalue()
+# --- 2. QUẢN LÝ DỮ LIỆU TẠM THỜI (SESSION STATE) ---
+if 'posts' not in st.session_state:
+    st.session_state.posts = [
+        {
+            "type": "image",
+            "url": "https://images.unsplash.com/photo-1548625361-9f939e3c4e33?q=80&w=1000&auto=format&fit=crop",
+            "caption": "Chào Tết 2026! Năm đầu tiên của tụi mình ✨",
+            "author": "System",
+            "date": "Giao thừa 2026",
+            "likes": 999
+        }
+    ]
 
-# --- 3. CSS TÙY CHỈNH (GIAO DIỆN ĐẸP) ---
+# --- 3. CSS "ĐẲNG CẤP" (GLASSMORPHISM & MOBILE UI) ---
 st.markdown("""
     <style>
-    /* Import font Google */
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@300;400&display=swap');
+    /* Import Font xịn từ Google */
+    @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Nunito:wght@400;700&family=Playfair+Display:wght@700&display=swap');
 
-    /* Nền chung */
+    /* Nền sang trọng (Màu đỏ nhung kết hợp vàng kim) */
     .stApp {
-        background-color: #5e0a0a; /* Đỏ rượu vang */
-        background-image: radial-gradient(#7a0e0e 20%, transparent 20%),
-        radial-gradient(#7a0e0e 20%, transparent 20%);
-        background-size: 50px 50px;
-        background-position: 0 0, 25px 25px;
+        background: linear-gradient(135deg, #4a0000 0%, #8b0000 50%, #2e0202 100%);
+        background-attachment: fixed;
     }
 
-    /* Tiêu đề chính */
-    h1 {
-        font-family: 'Playfair Display', serif;
-        color: #FFD700 !important;
-        text-shadow: 2px 2px 4px #000000;
-        text-align: center;
-        font-size: 3rem !important;
-        padding-bottom: 20px;
-    }
-
-    /* Card chứa form */
-    .wish-card {
-        background-color: rgba(255, 253, 208, 0.95); /* Màu kem */
-        padding: 30px;
-        border-radius: 15px;
-        border: 2px solid #FFD700;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-        margin-bottom: 20px;
-    }
-    
-    /* Chỉnh màu chữ trong card */
-    .stMarkdown, .stText, label {
-        color: #333333 !important;
-        font-family: 'Roboto', sans-serif;
-    }
-
-    /* Input field */
-    .stTextInput > div > div > input, .stTextArea > div > div > textarea {
-        background-color: #ffffff;
-        color: #000;
-        border: 1px solid #d1d1d1;
-        border-radius: 8px;
-    }
-
-    /* Nút bấm vàng kim loại */
-    .stButton > button {
-        background: linear-gradient(to bottom, #FFD700 5%, #FFAA00 100%);
-        background-color: #FFD700;
-        border-radius: 28px;
-        border: 1px solid #ffaa22;
-        display: inline-block;
-        cursor: pointer;
-        color: #8B0000;
-        font-family: 'Playfair Display', serif;
-        font-size: 20px;
-        font-weight: bold;
-        padding: 16px 31px;
-        text-decoration: none;
-        text-shadow: 0px 1px 0px #ffee66;
-        width: 100%;
-        transition: all 0.3s;
-    }
-    .stButton > button:hover {
-        background: linear-gradient(to bottom, #FFAA00 5%, #FFD700 100%);
-        transform: scale(1.02);
-    }
-    
-    /* Ẩn footer mặc định của Streamlit */
+    /* Ẩn các thành phần thừa của Streamlit */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
+    header {visibility: hidden;}
+
+    /* Tiêu đề chính */
+    .main-title {
+        font-family: 'Dancing Script', cursive;
+        color: #FFD700;
+        text-align: center;
+        font-size: 3.5rem;
+        text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        margin-bottom: 10px;
+    }
+    
+    .sub-title {
+        font-family: 'Playfair Display', serif;
+        color: #ffcccc;
+        text-align: center;
+        font-style: italic;
+        margin-bottom: 30px;
+        font-size: 1.2rem;
+    }
+
+    /* Card bài viết (Giống Facebook nhưng đẹp hơn) */
+    .post-card {
+        background: rgba(255, 255, 255, 0.1); /* Hiệu ứng kính mờ */
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        border-radius: 20px;
+        padding: 20px;
+        margin-bottom: 25px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        color: white;
+    }
+
+    .author-name {
+        font-weight: bold;
+        color: #FFD700;
+        font-size: 1.1rem;
+        font-family: 'Nunito', sans-serif;
+    }
+    
+    .post-date {
+        font-size: 0.8rem;
+        color: #ccc;
+        margin-bottom: 10px;
+    }
+
+    .post-caption {
+        font-size: 1.1rem;
+        margin-bottom: 15px;
+        line-height: 1.5;
+        font-family: 'Nunito', sans-serif;
+    }
+
+    /* Nút bấm Upload */
+    .stButton > button {
+        background: linear-gradient(90deg, #FFD700, #FFA500);
+        color: #5e0a0a;
+        font-weight: bold;
+        border: none;
+        border-radius: 50px;
+        padding: 0.5rem 2rem;
+        width: 100%;
+        transition: transform 0.2s;
+    }
+    .stButton > button:hover {
+        transform: scale(1.05);
+        box-shadow: 0 0 15px #FFD700;
+    }
+    
+    /* Input field */
+    .stTextInput > div > div > input, .stTextArea > div > div > textarea {
+        background-color: rgba(255, 255, 255, 0.9);
+        border-radius: 15px;
+        color: #333;
+    }
     </style>
     """, unsafe_allow_html=True)
 
 # --- 4. GIAO DIỆN CHÍNH ---
 def main():
-    # Header với hiệu ứng
-    st.markdown("<h1>🏮 HỘP THỜI GIAN 2026 🏮</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #ffcccb; font-style: italic; margin-bottom: 30px;'>Gửi một tín hiệu vào vũ trụ, gặt hái thành công vào cuối năm.</p>", unsafe_allow_html=True)
+    # Header
+    st.markdown("<div class='main-title'>Bảo & Yến</div>", unsafe_allow_html=True)
+    st.markdown("<div class='sub-title'>✨ Our Digital Home • Tết 2026 ✨</div>", unsafe_allow_html=True)
 
-    # Container dạng Card
-    with st.container():
-        st.markdown('<div class="wish-card">', unsafe_allow_html=True)
-        
-        # Form nhập liệu
-        col1, col2 = st.columns([1, 1])
-        with col1:
-            name = st.text_input("Họ và tên quý danh:", placeholder="Nhập tên của bạn...")
-        with col2:
-            feeling = st.selectbox("Cảm xúc hiện tại:", ["Hào hứng 🤩", "Hy vọng 🍀", "Quyết tâm 🔥", "Bình yên 🍵"])
+    # Nút đăng bài (Dạng Expander để gọn giao diện)
+    with st.expander("📸 Đăng khoảnh khắc mới"):
+        with st.form("upload_form", clear_on_submit=True):
+            author = st.selectbox("Bạn là ai?", ["Bảo đẹp trai", "Yến xinh gái"])
+            caption = st.text_area("Viết gì đó...", placeholder="Hôm nay tụi mình đi đâu thế?")
+            uploaded_file = st.file_uploader("Chọn ảnh/video", type=['png', 'jpg', 'jpeg', 'mp4', 'mov'])
             
-        content = st.text_area("Điều ước tâm huyết nhất năm nay:", height=120, placeholder="Ví dụ: Năm nay mình sẽ đi du lịch Nhật Bản và để dành được 100 triệu...")
-        
-        st.markdown("</div>", unsafe_allow_html=True)
+            submit_btn = st.form_submit_button("Đăng Lên Tường 🚀")
+            
+            if submit_btn and uploaded_file and caption:
+                bytes_data = uploaded_file.getvalue()
+                b64_data = base64.b64encode(bytes_data).decode()
+                
+                file_type = "video" if uploaded_file.type.startswith("video") else "image"
+                mime_type = uploaded_file.type
+                
+                new_post = {
+                    "type": file_type,
+                    "data": b64_data,
+                    "mime": mime_type,
+                    "caption": caption,
+                    "author": author,
+                    "date": datetime.now().strftime("%H:%M • %d/%m/%Y"),
+                    "likes": 0
+                }
+                
+                st.session_state.posts.insert(0, new_post)
+                st.success("Đã đăng thành công!")
+                st.rerun()
 
-        # Nút bấm nằm ngoài card để nổi bật
-        submitted = st.button("🚀 NIÊM PHONG & GỬI ĐI")
+    st.markdown("---")
 
-        # --- 5. XỬ LÝ KHI BẤM NÚT ---
-        if submitted:
-            if not name or not content:
-                st.error("⚠️ Bạn ơi, vũ trụ cần biết tên và điều ước của bạn mới thực hiện được!")
+    # --- 5. HIỂN THỊ NEWS FEED ---
+    if not st.session_state.posts:
+        st.info("Chưa có bài viết nào. Hãy là người đầu tiên đăng bài nhé!")
+    
+    for i, post in enumerate(st.session_state.posts):
+        st.markdown(f"""
+        <div class="post-card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div class="author-name">{post['author']}</div>
+                    <div class="post-date">{post['date']}</div>
+                </div>
+                <div style="font-size: 1.5rem;">❤️</div>
+            </div>
+            <hr style="border-color: rgba(255,255,255,0.2); margin: 10px 0;">
+            <div class="post-caption">{post['caption']}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        if post['type'] == 'image':
+            if 'url' in post:
+                st.image(post['url'], use_column_width=True)
             else:
-                # Hiệu ứng Loading chuyên nghiệp
-                with st.status("Đang kết nối với vệ tinh...", expanded=True) as status:
-                    st.write("Đang mã hóa điều ước...")
-                    time.sleep(1)
-                    st.write("Đang gửi lên đám mây...")
-                    time.sleep(1)
-                    status.update(label="✅ Đã gửi thành công!", state="complete", expanded=False)
-                
-                # Hiệu ứng pháo hoa
-                st.balloons()
-                
-                # Tạo thiệp ảnh
-                card_image = create_wish_card(f"{name} - {feeling}", content)
-                
-                # Hiển thị kết quả
-                st.markdown("---")
-                st.markdown("<h3 style='color: #FFD700; text-align: center;'>🧧 LỜI NHẮN ĐÃ ĐƯỢC LƯU GIỮ</h3>", unsafe_allow_html=True)
-                
-                col_img, col_dl = st.columns([2, 1])
-                
-                with col_img:
-                    st.image(card_image, caption="Thiệp xác nhận từ vũ trụ", use_column_width=True)
-                
-                with col_dl:
-                    st.success("Điều ước của bạn đã được niêm phong an toàn!")
-                    st.info("Hãy tải tấm thiệp này về máy làm kỷ niệm nhé.")
-                    
-                    # Nút tải về
-                    st.download_button(
-                        label="📥 Tải Thiệp Về Máy",
-                        data=card_image,
-                        file_name=f"DieuUoc_Tet2026_{name}.png",
-                        mime="image/png"
-                    )
+                st.markdown(f'<img src="data:{post["mime"]};base64,{post["data"]}" style="width:100%; border-radius: 10px;">', unsafe_allow_html=True)
+        
+        elif post['type'] == 'video':
+            st.markdown(f"""
+                <video width="100%" controls style="border-radius: 10px;">
+                    <source src="data:{post['mime']};base64,{post['data']}" type="{post['mime']}">
+                    Trình duyệt không hỗ trợ video.
+                </video>
+            """, unsafe_allow_html=True)
+            
+        col1, col2 = st.columns([1, 4])
+        with col1:
+            if st.button(f"Yêu thích", key=f"like_{i}"):
+                st.toast("Đã thả tim! ❤️")
+        
+        st.markdown("<div style='height: 30px'></div>", unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
