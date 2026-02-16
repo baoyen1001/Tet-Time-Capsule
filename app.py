@@ -1,286 +1,188 @@
 import streamlit as st
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 from datetime import datetime
-import base64
 
-# --- 1. CẤU HÌNH TRANG ---
+# --- 1. CẤU HÌNH KẾT NỐI (ĐÃ TÍCH HỢP KEY CỦA BẠN) ---
+cloudinary.config( 
+  cloud_name = "diirli2p5", 
+  api_key = "734765651265494", 
+  api_secret = "MhEUSTq3Vl_KwUT_sWSZt0VPiak",
+  secure = True
+)
+
+# Tên thư mục trên Cloudinary (Nơi chứa ảnh của 2 bạn)
+FOLDER_NAME = "BaoYen_Memories_2026"
+
+# --- 2. CẤU HÌNH TRANG WEB ---
 st.set_page_config(
-    page_title="Bảo & Yến - Love & Goals 2026",
+    page_title="Bảo & Yến - Our Forever Gallery",
     page_icon="💖",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
 
-# --- 2. KHỞI TẠO DỮ LIỆU (SESSION STATE) ---
-if 'feed' not in st.session_state:
-    st.session_state.feed = []
-if 'goals' not in st.session_state:
-    st.session_state.goals = [
-        {"task": "Cùng nhau đi du lịch Đà Lạt", "done": False, "author": "Bảo"},
-        {"task": "Học xong khóa tiếng Anh", "done": False, "author": "Yến"}
-    ]
-
-# --- 3. CSS 3D & DECOR SIÊU ĐẸP ---
+# --- 3. CSS GIAO DIỆN "GLASSMORPHISM" (KÍNH MỜ SANG TRỌNG) ---
 st.markdown("""
     <style>
-    /* Import Font Google */
-    @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Nunito:wght@400;700&family=Playfair+Display:wght@700&display=swap');
+    /* Import Font đẹp */
+    @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Nunito:wght@400;700&display=swap');
 
-    /* Nền Galaxy 3D */
+    /* Nền Galaxy Tối */
     .stApp {
-        background: radial-gradient(circle at center, #2b0000 0%, #000000 100%);
+        background: radial-gradient(circle at center, #1a0b2e 0%, #000000 100%);
         color: white;
     }
 
-    /* Hiệu ứng tiêu đề 3D Neon */
-    .neon-text {
+    /* Tiêu đề Neon */
+    .neon-title {
         font-family: 'Dancing Script', cursive;
-        color: #fff;
-        text-shadow: 
-            0 0 5px #fff, 
-            0 0 10px #ff0055, 
-            0 0 20px #ff0055, 
-            0 0 40px #ff0055;
         text-align: center;
-        font-size: 3.8rem;
+        font-size: 3.5rem;
+        color: #fff;
+        text-shadow: 0 0 10px #ff00de, 0 0 20px #ff00de, 0 0 40px #ff00de;
         margin-bottom: 10px;
     }
 
-    /* Card 3D Glassmorphism (Kính mờ) */
+    /* Card chứa ảnh (Hiệu ứng kính) */
     .glass-card {
         background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
+        backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 20px;
-        padding: 25px;
+        border-radius: 15px;
+        padding: 15px;
         margin-bottom: 25px;
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
-        transition: transform 0.3s ease;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        transition: transform 0.3s;
     }
-    
     .glass-card:hover {
-        transform: translateY(-5px); /* Nổi lên khi di chuột vào */
-        box-shadow: 0 20px 40px rgba(255, 0, 85, 0.3);
-        border: 1px solid rgba(255, 255, 255, 0.3);
+        transform: translateY(-5px);
+        border: 1px solid rgba(255, 0, 222, 0.5);
     }
 
-    /* Avatar & Info */
-    .post-header {
-        display: flex;
-        align-items: center;
-        margin-bottom: 15px;
-        border-bottom: 1px solid rgba(255,255,255,0.1);
-        padding-bottom: 10px;
-    }
-    .avatar-circle {
-        width: 45px;
-        height: 45px;
-        border-radius: 50%;
-        background: linear-gradient(45deg, #FFD700, #FF0055);
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    /* Thông tin người đăng */
+    .author-tag {
+        font-size: 0.9rem;
         font-weight: bold;
-        font-size: 20px;
-        margin-right: 15px;
-        box-shadow: 0 0 10px rgba(255, 0, 85, 0.5);
-    }
-    .author-info h4 {
-        margin: 0;
         color: #FFD700;
-        font-family: 'Playfair Display', serif;
-    }
-    .author-info span {
-        font-size: 0.8rem;
-        color: #aaa;
-    }
-
-    /* Style cho Tab */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 10px;
-        background-color: transparent;
-    }
-    .stTabs [data-baseweb="tab"] {
-        background-color: rgba(255,255,255,0.1);
-        border-radius: 20px;
-        color: white;
-        padding: 10px 20px;
-    }
-    .stTabs [aria-selected="true"] {
-        background: linear-gradient(90deg, #FF0055, #FF5500);
-        color: white !important;
-        font-weight: bold;
-    }
-
-    /* Nút bấm Custom */
-    div.stButton > button {
-        background: linear-gradient(90deg, #FF0055, #FF5500);
-        color: white;
-        border-radius: 30px;
-        border: none;
-        padding: 0.5rem 1rem;
-        font-weight: bold;
-        width: 100%;
-        box-shadow: 0 5px 15px rgba(255, 85, 0, 0.4);
-    }
-    div.stButton > button:hover {
-        transform: scale(1.02);
+        margin-bottom: 5px;
+        font-family: 'Nunito', sans-serif;
     }
     
-    /* Ẩn linh tinh */
+    .caption-text {
+        font-size: 1rem;
+        color: #e0e0e0;
+        font-style: italic;
+        margin-bottom: 10px;
+        font-family: 'Nunito', sans-serif;
+    }
+
+    /* Nút bấm đẹp */
+    .stButton > button {
+        background: linear-gradient(45deg, #ff00de, #00d4ff);
+        border: none;
+        color: white;
+        font-weight: bold;
+        border-radius: 20px;
+        width: 100%;
+        padding: 10px;
+    }
+    
+    /* Ẩn các phần thừa */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
     </style>
-    """, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
-# --- 4. HÀM XỬ LÝ ẢNH/VIDEO (QUAN TRỌNG ĐỂ HIỂN THỊ) ---
-def get_base64_of_bin_file(bin_file):
-    with st.spinner("Đang xử lý media..."):
-        data = bin_file.read()
-    return base64.b64encode(data).decode()
+# --- 4. HÀM XỬ LÝ CLOUDINARY ---
+def upload_to_cloud(file, caption, author):
+    try:
+        # Upload file lên Cloudinary kèm thông tin (context)
+        res = cloudinary.uploader.upload(
+            file, 
+            folder=FOLDER_NAME,
+            context=f"caption={caption}|author={author}"
+        )
+        return res
+    except Exception as e:
+        st.error(f"Lỗi kết nối: {e}")
+        return None
+
+def get_images_from_cloud():
+    try:
+        # Lấy danh sách ảnh từ folder về
+        res = cloudinary.api.resources(
+            type="upload",
+            prefix=FOLDER_NAME,
+            context=True, # Lấy kèm caption
+            max_results=50,
+            direction="desc" # Ảnh mới nhất lên đầu
+        )
+        return res.get('resources', [])
+    except:
+        return []
 
 # --- 5. GIAO DIỆN CHÍNH ---
 def main():
-    # Tiêu đề Neon
-    st.markdown("<div class='neon-text'>Bảo & Yến ❤️</div>", unsafe_allow_html=True)
-    st.caption("✨ Nhật ký tình yêu & Mục tiêu 2026 ✨")
+    st.markdown("<div class='neon-title'>Bảo & Yến ❤️</div>", unsafe_allow_html=True)
+    st.caption("✨ Nơi lưu giữ những khoảnh khắc vĩnh cửu ✨")
 
-    # Chia Tab
-    tab1, tab2 = st.tabs(["📸 KHOẢNH KHẮC (Feed)", "📝 MỤC TIÊU (To-Do)"])
-
-    # --- TAB 1: NEWS FEED ---
-    with tab1:
-        # Form đăng bài
-        with st.expander("➕ Đăng ảnh/video mới", expanded=False):
-            with st.form("post_form", clear_on_submit=True):
-                col_auth, col_cap = st.columns([1, 2])
-                with col_auth:
-                    author = st.selectbox("Người đăng:", ["Bảo", "Yến"])
-                with col_cap:
-                    caption = st.text_area("Caption:", placeholder="Viết gì đó lãng mạn đi...", height=80)
-                
-                uploaded_file = st.file_uploader("Chọn file:", type=['png', 'jpg', 'mp4'])
-                submitted = st.form_submit_button("Đăng Ngay 🚀")
-
-                if submitted and caption and uploaded_file:
-                    # Xử lý file sang Base64
-                    file_ext = uploaded_file.name.split(".")[-1].lower()
-                    base64_data = get_base64_of_bin_file(uploaded_file)
-                    
-                    media_type = "video" if file_ext in ['mp4', 'mov'] else "image"
-                    mime_type = f"video/{file_ext}" if media_type == "video" else f"image/{file_ext}"
-
-                    st.session_state.feed.insert(0, {
-                        "author": author,
-                        "caption": caption,
-                        "time": datetime.now().strftime("%H:%M - %d/%m"),
-                        "media_data": base64_data,
-                        "media_mime": mime_type,
-                        "type": media_type
-                    })
-                    st.success("Đã đăng thành công!")
-                    st.rerun()
-
-        st.markdown("---")
-
-        # Hiển thị bài viết
-        if not st.session_state.feed:
-            st.info("Chưa có bài viết nào. Hai bạn hãy mở hàng đi!")
-
-        for post in st.session_state.feed:
-            # Avatar chữ cái đầu
-            avatar_char = post['author'][0]
+    # --- FORM ĐĂNG ẢNH ---
+    with st.expander("📸 ĐĂNG KHOẢNH KHẮC MỚI", expanded=False):
+        with st.form("upload_form", clear_on_submit=True):
+            col1, col2 = st.columns([1, 2])
+            author = col1.selectbox("Người đăng:", ["Bảo", "Yến"])
+            caption = col2.text_input("Caption:", placeholder="Viết điều gì đó lãng mạn...")
             
-            # HTML Card Container
+            uploaded_file = st.file_uploader("Chọn ảnh/video:", type=['jpg', 'png', 'jpeg', 'mp4'])
+            
+            submit_btn = st.form_submit_button("LƯU LÊN MÂY ☁️")
+            
+            if submit_btn and uploaded_file:
+                with st.spinner("Đang gửi tín hiệu lên vệ tinh..."):
+                    result = upload_to_cloud(uploaded_file, caption, author)
+                    if result:
+                        st.success("Đã lưu thành công! Ảnh sẽ không bao giờ mất.")
+                        st.rerun() # Tải lại trang để hiện ảnh ngay
+
+    st.markdown("---")
+
+    # --- HIỂN THỊ KHO ẢNH (GALLERY) ---
+    st.subheader("🎞️ Ký Ức Của Chúng Ta")
+    
+    # Lấy ảnh từ Cloud về
+    images = get_images_from_cloud()
+    
+    if not images:
+        st.info("Chưa có ảnh nào. Hai bạn hãy mở hàng đi nào!")
+    else:
+        # Hiển thị dạng lưới (Grid)
+        for img in images:
+            # Lấy thông tin metadata
+            context = img.get('context', {}).get('custom', {})
+            author_name = context.get('author', 'Người giấu mặt')
+            caption_content = context.get('caption', '...')
+            created_at = img.get('created_at', '')[:10] # Lấy ngày đăng
+            img_url = img.get('secure_url')
+            
+            # Giao diện từng Card
             st.markdown(f"""
             <div class="glass-card">
-                <div class="post-header">
-                    <div class="avatar-circle">{avatar_char}</div>
-                    <div class="author-info">
-                        <h4>{post['author']}</h4>
-                        <span>{post['time']}</span>
-                    </div>
-                </div>
-                <div style="font-size: 1.1rem; margin-bottom: 15px; font-family: 'Nunito', sans-serif;">
-                    {post['caption']}
-                </div>
+                <div class="author-tag">Avatar: {author_name} • <span style="font-weight:normal; color:#ccc">{created_at}</span></div>
+                <div class="caption-text">"{caption_content}"</div>
             </div>
             """, unsafe_allow_html=True)
-
-            # Hiển thị Media bằng St.Image/Video (Đặt ngoài HTML để tránh lỗi render)
-            if post['type'] == 'image':
-                # Decode base64 để hiển thị bằng st.image (Cách ổn định nhất)
-                img_bytes = base64.b64decode(post['media_data'])
-                st.image(img_bytes, use_column_width=True)
-            elif post['type'] == 'video':
-                # Video cần dùng HTML tag vì st.video đôi khi kén base64
-                video_html = f'''
-                    <video width="100%" controls style="border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);">
-                    <source src="data:{post['media_mime']};base64,{post['media_data']}">
-                    </video>
-                '''
-                st.markdown(video_html, unsafe_allow_html=True)
             
-            # Khoảng cách giữa các bài
-            st.markdown("<div style='margin-bottom: 40px;'></div>", unsafe_allow_html=True)
-
-    # --- TAB 2: TO-DO LIST (MỤC TIÊU) ---
-    with tab2:
-        st.markdown("<h3 style='text-align: center; color: #FFD700;'>🎯 Mục Tiêu Năm Nay</h3>", unsafe_allow_html=True)
-        
-        # Form thêm mục tiêu
-        with st.form("goal_form", clear_on_submit=True):
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                new_task = st.text_input("Mục tiêu mới:", placeholder="Ví dụ: Mua xe mới...")
-            with col2:
-                who = st.selectbox("Ai thực hiện?", ["Cả 2", "Bảo", "Yến"])
+            # Hiển thị ảnh/video
+            if "video" in img.get('resource_type', ''):
+                st.video(img_url)
+            else:
+                st.image(img_url, use_column_width=True)
             
-            if st.form_submit_button("Thêm mục tiêu"):
-                if new_task:
-                    st.session_state.goals.append({"task": new_task, "done": False, "author": who})
-                    st.rerun()
-
-        # Danh sách mục tiêu (Dạng Checklist đẹp)
-        st.markdown("<div style='height: 20px'></div>", unsafe_allow_html=True)
-        
-        for i, goal in enumerate(st.session_state.goals):
-            # Tạo khung cho từng mục tiêu
-            col_check, col_text, col_del = st.columns([1, 8, 1])
-            
-            with col_check:
-                is_done = st.checkbox("", value=goal['done'], key=f"check_{i}")
-            
-            # Cập nhật trạng thái
-            if is_done != goal['done']:
-                st.session_state.goals[i]['done'] = is_done
-                st.rerun()
-
-            with col_text:
-                status_style = "text-decoration: line-through; color: gray;" if is_done else "color: white; font-weight: bold;"
-                st.markdown(f"""
-                    <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; {status_style}">
-                        {goal['task']} <span style="font-size: 0.8em; color: #FFD700; margin-left: 10px;">({goal['author']})</span>
-                    </div>
-                """, unsafe_allow_html=True)
-            
-            with col_del:
-                if st.button("🗑️", key=f"del_{i}"):
-                    st.session_state.goals.pop(i)
-                    st.rerun()
-        
-        # Thanh tiến độ
-        if st.session_state.goals:
-            done_count = sum(1 for g in st.session_state.goals if g['done'])
-            total = len(st.session_state.goals)
-            progress = done_count / total
-            st.markdown("---")
-            st.write(f"Tiến độ hoàn thành: {int(progress*100)}%")
-            st.progress(progress)
-            if progress == 1.0:
-                st.balloons()
-                st.success("Chúc mừng hai bạn đã hoàn thành mọi mục tiêu! 🎉")
+            # Khoảng cách
+            st.markdown("<div style='margin-bottom: 30px'></div>", unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
