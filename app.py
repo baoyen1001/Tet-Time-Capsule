@@ -2,7 +2,7 @@ import streamlit as st
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
-from datetime import datetime
+from datetime import datetime, date
 import time
 
 # --- 1. CẤU HÌNH KẾT NỐI (Key của Bảo) ---
@@ -16,284 +16,275 @@ FOLDER_NAME = "BaoYen_Memories_2026"
 
 # --- 2. CẤU HÌNH TRANG ---
 st.set_page_config(
-    page_title="Bảo & Yến - Tet 2026",
-    page_icon="🌸",
+    page_title="The Story of Us",
+    page_icon="💌",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
 # --- 3. KHỞI TẠO DỮ LIỆU ---
-if 'goals' not in st.session_state:
-    st.session_state.goals = [
-        {"task": "Chụp bộ ảnh Tết áo dài", "done": True, "author": "Cả 2"},
-        {"task": "Đi du lịch Đà Lạt", "done": False, "author": "Bảo"},
-        {"task": "Tiết kiệm 100 triệu", "done": False, "author": "Yến"}
+if 'timeline' not in st.session_state:
+    st.session_state.timeline = [
+        {"date": date(2026, 1, 10), "title": "Ngày bắt đầu", "desc": "Khoảnh khắc chúng ta chính thức bên nhau ❤️", "icon": "💘"},
+        {"date": date(2026, 2, 14), "title": "Valentine Đầu Tiên", "desc": "Cùng nhau đi ăn tối lãng mạn", "icon": "🌹"},
     ]
 if 'wishes' not in st.session_state:
     st.session_state.wishes = []
+if 'love_start_date' not in st.session_state:
+    st.session_state.love_start_date = date(2026, 1, 10)
 
-# --- 4. CSS & HIỆU ỨNG (KHÔNG DÙNG LINK NGOÀI ĐỂ TRÁNH LỖI) ---
+# --- 4. CSS CAO CẤP (POLAROID & TIMELINE STYLE) ---
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Nunito:wght@400;700&family=Pacifico&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Nunito:wght@400;700&family=Playfair+Display:wght@700&display=swap');
 
-    /* Nền Gradient Pastel */
+    /* Nền giấy cũ Vintage sang trọng */
     .stApp {
-        background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #a1c4fd 100%);
-        background-attachment: fixed;
+        background-color: #fdfbf7;
+        background-image: url("https://www.transparenttextures.com/patterns/cream-paper.png");
+        color: #4a4a4a;
     }
 
-    /* --- HIỆU ỨNG HOA RƠI & PHÁO HOA BẰNG EMOJI (SIÊU BỀN) --- */
+    /* Sidebar Styling */
+    section[data-testid="stSidebar"] {
+        background-color: #fff;
+        border-right: 1px solid #eee;
+    }
+
+    /* Typography */
+    h1, h2, h3 { font-family: 'Playfair Display', serif; color: #2c3e50; }
+    p, div { font-family: 'Nunito', sans-serif; }
     
-    /* 1. Lớp chứa hiệu ứng nền */
-    .effect-container {
-        position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        pointer-events: none; z-index: 1;
-        overflow: hidden;
+    .handwriting {
+        font-family: 'Dancing Script', cursive;
+        font-size: 1.5rem;
+        color: #555;
     }
 
-    /* 2. Định nghĩa hạt rơi (Hoa đào) */
-    .particle {
-        position: absolute;
-        top: -10%;
-        font-size: 25px;
-        animation: fall linear infinite;
-    }
-    
-    @keyframes fall {
-        0% { transform: translateY(0vh) rotate(0deg); opacity: 1; }
-        100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
-    }
-
-    /* Tạo vị trí ngẫu nhiên cho hoa */
-    .p1 { left: 10%; animation-duration: 10s; animation-delay: 0s; }
-    .p2 { left: 25%; animation-duration: 15s; animation-delay: 2s; font-size: 20px;}
-    .p3 { left: 50%; animation-duration: 12s; animation-delay: 4s; }
-    .p4 { left: 75%; animation-duration: 8s; animation-delay: 1s; font-size: 30px;}
-    .p5 { left: 90%; animation-duration: 18s; animation-delay: 3s; }
-
-    /* 3. Hiệu ứng Pháo hoa (CSS thuần - Tạo vòng tròn nổ) */
-    @keyframes firework {
-        0% { transform: scale(0); opacity: 1; }
-        100% { transform: scale(1.5); opacity: 0; }
-    }
-    
-    .firework-css {
-        position: absolute;
-        width: 10px; height: 10px;
-        border-radius: 50%;
-        box-shadow: 
-            0 0 0 5px #ff00de,
-            0 0 0 10px #00d4ff,
-            0 0 0 20px #ff9a9e;
-        animation: firework 2s infinite;
-    }
-    .fw1 { top: 10%; left: 10%; animation-delay: 0.5s; }
-    .fw2 { top: 15%; right: 10%; animation-delay: 1.2s; box-shadow: 0 0 0 5px yellow, 0 0 0 15px red; }
-
-    /* --- GIAO DIỆN CHÍNH --- */
-    .hero-title {
-        font-family: 'Pacifico', cursive;
-        font-size: 4.5rem;
+    /* --- 1. POLAROID CARD (GALLERY) --- */
+    .polaroid {
+        background: white;
+        padding: 15px 15px 40px 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transform: rotate(-2deg);
+        transition: all 0.3s ease;
+        border: 1px solid #ddd;
+        margin-bottom: 30px;
         text-align: center;
-        color: #fff;
-        text-shadow: 3px 3px 0px rgba(255, 105, 180, 0.6);
-        margin-top: -20px;
-        position: relative; z-index: 10;
-        animation: float 3s ease-in-out infinite;
     }
-    @keyframes float {
-        0% { transform: translateY(0px); }
-        50% { transform: translateY(-10px); }
-        100% { transform: translateY(0px); }
+    .polaroid:hover {
+        transform: rotate(0deg) scale(1.02);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        z-index: 10;
+    }
+    .polaroid img { width: 100%; filter: sepia(10%); }
+    .polaroid-caption {
+        margin-top: 15px;
+        font-family: 'Dancing Script', cursive;
+        font-size: 1.3rem;
+        color: #444;
     }
 
-    /* Card nội dung */
-    .content-card {
-        background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(10px);
-        border-radius: 20px;
+    /* --- 2. VERTICAL TIMELINE --- */
+    .timeline-item {
+        background: white;
+        border-left: 4px solid #ff9a9e;
         padding: 20px;
         margin-bottom: 20px;
-        border: 1px solid white;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-        position: relative; z-index: 10;
-        transition: transform 0.2s;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        border-radius: 0 10px 10px 0;
+        position: relative;
     }
-    .content-card:hover { transform: translateY(-3px); }
+    .timeline-date {
+        font-weight: bold; color: #ff9a9e; text-transform: uppercase; font-size: 0.8rem;
+    }
+    .timeline-icon {
+        position: absolute; left: -22px; top: 15px; 
+        background: #fff; border: 2px solid #ff9a9e; 
+        border-radius: 50%; width: 35px; height: 35px; 
+        text-align: center; line-height: 30px;
+    }
 
-    /* Tabs */
-    .stTabs [data-baseweb="tab-list"] {
-        justify-content: center; gap: 20px;
-        background: rgba(255,255,255,0.4);
-        padding: 10px; border-radius: 50px;
-        margin-bottom: 20px; position: relative; z-index: 10;
+    /* --- 3. ENVELOPE (TIME CAPSULE) --- */
+    .envelope {
+        background: #fff;
+        border: 2px dashed #ccc;
+        padding: 30px;
+        text-align: center;
+        border-radius: 10px;
+        cursor: pointer;
     }
-    .stTabs [aria-selected="true"] {
-        background: white !important; color: #ff758c !important;
-        border-radius: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-    div[data-testid="stMarkdownContainer"] p { font-family: 'Nunito', sans-serif; }
+    .envelope.locked { background: #f9f9f9; color: #aaa; }
+    .envelope.unlocked { border: 2px solid #ff9a9e; background: #fff5f7; }
 
     /* Button */
     div.stButton > button {
-        background: linear-gradient(to right, #ff758c 0%, #ff7eb3 100%);
-        color: white; border: none; border-radius: 20px;
-        font-weight: bold; padding: 0.5rem 1rem;
-        box-shadow: 0 4px 10px rgba(255, 117, 140, 0.4);
+        background-color: #2c3e50; color: white; border-radius: 5px;
+        font-family: 'Nunito', sans-serif; text-transform: uppercase; letter-spacing: 1px;
     }
-    div.stButton > button:hover { transform: scale(1.05); }
-
+    div.stButton > button:hover { background-color: #ff9a9e; border-color: #ff9a9e; }
+    
     /* Ẩn Header */
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
     </style>
-    
-    <div class="effect-container">
-        <div class="particle p1">🌸</div>
-        <div class="particle p2">✨</div>
-        <div class="particle p3">🌸</div>
-        <div class="particle p4">🍀</div>
-        <div class="particle p5">🌸</div>
-        
-        <div class="firework-css fw1"></div>
-        <div class="firework-css fw2"></div>
-    </div>
 """, unsafe_allow_html=True)
 
-# --- 5. HÀM CLOUDINARY ---
+# --- 5. HÀM HỖ TRỢ ---
 def get_media():
     try:
-        return cloudinary.api.resources(type="upload", prefix=FOLDER_NAME, context=True, max_results=50, direction="desc").get('resources', [])
+        return cloudinary.api.resources(type="upload", prefix=FOLDER_NAME, context=True, max_results=100, direction="desc").get('resources', [])
     except:
         return []
 
 def upload_media(file, caption, author):
     try:
         return cloudinary.uploader.upload(file, folder=FOLDER_NAME, context=f"caption={caption}|author={author}")
-    except Exception as e:
-        st.error(f"Lỗi: {e}")
+    except:
         return None
+
+def get_love_duration():
+    delta = date.today() - st.session_state.love_start_date
+    return delta.days, delta.total_seconds()
 
 # --- 6. GIAO DIỆN CHÍNH ---
 def main():
-    # Header
-    st.markdown("<div class='hero-title'>Tết 2026: Bảo & Yến ❤️</div>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align:center; color:white; font-weight:bold; position:relative; z-index:10; font-size:1.2rem;'>🌸 Xuân Bính Ngọ - Bên Nhau Trọn Đời 🌸</p>", unsafe_allow_html=True)
-    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # --- SIDEBAR (THANH BÊN) ---
+    with st.sidebar:
+        st.markdown("<h2 style='text-align:center;'>Bảo & Yến</h2>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:center; font-size:3rem;'>∞</div>", unsafe_allow_html=True)
+        
+        days, seconds = get_love_duration()
+        st.metric(label="Bên nhau được", value=f"{days} Ngày")
+        
+        st.markdown("---")
+        st.markdown("### 🎵 Mood Player")
+        st.audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3")
+        st.caption("Now playing: Our Song")
+        
+        st.markdown("---")
+        st.info("💡 Mẹo: Vào Tab 'Hành Trình' để ghi lại những cột mốc đáng nhớ nhé!")
 
-    # Tabs
-    tab1, tab2, tab3 = st.tabs(["📸 KHOẢNH KHẮC", "📝 MỤC TIÊU", "💌 ĐIỀU ƯỚC"])
+    # --- MAIN CONTENT ---
+    st.markdown("<h1 style='text-align:center; font-size: 3.5rem;'>The Journal of Us</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align:center; color:#888; margin-bottom:40px;'>Lưu giữ từng khoảnh khắc, trân trọng từng phút giây.</p>", unsafe_allow_html=True)
 
-    # === TAB 1: THƯ VIỆN ẢNH ===
+    tab1, tab2, tab3 = st.tabs(["📸 POLAROID GALLERY", "📍 HÀNH TRÌNH YÊU", "💌 HỘP THƯ TƯƠNG LAI"])
+
+    # === TAB 1: POLAROID GALLERY ===
     with tab1:
-        with st.expander("📤 Đăng ảnh/video mới (Click để mở)", expanded=False):
-            with st.form("up_form", clear_on_submit=True):
+        # Nút Upload nhỏ gọn
+        with st.expander("📷 Thêm ảnh vào Album"):
+            with st.form("up"):
                 c1, c2 = st.columns([1, 2])
-                author = c1.selectbox("Người đăng", ["Bảo", "Yến"])
-                caption = c2.text_input("Caption", placeholder="Nhập chú thích...")
-                file = st.file_uploader("Chọn ảnh/video", type=['jpg','png','mp4'])
-                if st.form_submit_button("Lưu Kỷ Niệm"):
-                    if file:
-                        with st.spinner("Đang lưu..."):
-                            upload_media(file, caption, author)
-                            st.success("Đã lưu!")
-                            time.sleep(1)
-                            st.rerun()
+                au = c1.selectbox("Photographer", ["Bảo", "Yến"])
+                cap = c2.text_input("Ghi chú (Viết ngắn sẽ đẹp hơn)")
+                fl = st.file_uploader("Chọn ảnh", type=['jpg','png'])
+                if st.form_submit_button("Rửa ảnh"):
+                    if fl:
+                        upload_media(fl, cap, au)
+                        st.rerun()
 
         media = get_media()
         if not media:
-            st.info("Chưa có ảnh nào.")
+            st.caption("Chưa có tấm ảnh nào...")
         
+        # Hiển thị dạng Polaroid
         cols = st.columns(3)
         for i, item in enumerate(media):
             ctx = item.get('context', {}).get('custom', {})
             url = item.get('secure_url')
             
+            # Góc xoay ngẫu nhiên cho tự nhiên (-2 đến 2 độ)
+            rot = (i % 5) - 2 
+            
             with cols[i % 3]:
                 st.markdown(f"""
-                <div class="content-card">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                        <span style="font-weight:bold; color:#ff758c;">{ctx.get('author','Author')}</span>
-                        <span style="font-size:0.8em; color:#888;">{item.get('created_at','')[:10]}</span>
+                <div class="polaroid" style="transform: rotate({rot}deg);">
+                    <img src="{url}" style="border: 1px solid #eee;">
+                    <div class="polaroid-caption">
+                        "{ctx.get('caption','')}"
                     </div>
-                """, unsafe_allow_html=True)
-                
-                if item.get('format') == 'mp4':
-                    st.video(url)
-                else:
-                    st.image(url, use_column_width=True)
-                
-                st.markdown(f"""
-                    <div style="margin-top:10px; font-family:'Nunito'; color:#555;">"{ctx.get('caption','')}"</div>
+                    <div style="font-size:0.7rem; color:#ccc; margin-top:5px; font-family:'Nunito'">
+                        {item.get('created_at')[:10]} • {ctx.get('author')}
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
 
-    # === TAB 2: MỤC TIÊU ===
+    # === TAB 2: VERTICAL TIMELINE (Hành Trình) ===
     with tab2:
-        c_add1, c_add2, c_add3 = st.columns([3, 1, 1])
-        with c_add1:
-            new_task = st.text_input("Mục tiêu mới", label_visibility="collapsed", placeholder="Nhập mục tiêu...")
-        with c_add2:
-            who = st.selectbox("Ai", ["Cả 2", "Bảo", "Yến"], label_visibility="collapsed", key="who_goal")
-        with c_add3:
-            if st.button("Thêm") and new_task:
-                st.session_state.goals.append({"task": new_task, "done": False, "author": who})
-                st.rerun()
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        for i, g in enumerate(st.session_state.goals):
-            c_chk, c_txt, c_del = st.columns([0.5, 5, 0.5])
-            
-            done = c_chk.checkbox("", value=g['done'], key=f"g{i}")
-            if done != g['done']:
-                st.session_state.goals[i]['done'] = done
-                st.rerun()
-            
-            style = "text-decoration: line-through; color: #aaa;" if done else "color: #444; font-weight:bold;"
-            
-            c_txt.markdown(f"""
-                <div class="content-card" style="padding:10px; margin-bottom:5px; {style}">
-                    {g['task']} <span style="font-size:0.7em; background:#ff9a9e; color:white; padding:2px 8px; border-radius:10px; margin-left:5px;">{g['author']}</span>
-                </div>
-            """, unsafe_allow_html=True)
-            
-            if c_del.button("🗑️", key=f"d{i}"):
-                st.session_state.goals.pop(i)
-                st.rerun()
-
-    # === TAB 3: ĐIỀU ƯỚC ===
-    with tab3:
-        st.markdown("<h3 style='text-align:center; color:#fff; font-family:Nunito'>💌 Gửi Tín Hiệu Vào Vũ Trụ</h3>", unsafe_allow_html=True)
+        c_add, c_view = st.columns([1, 2])
         
-        with st.form("wish"):
-            txt = st.text_area("Điều ước 2026:", height=100)
-            if st.form_submit_button("Gửi đi ❤️"):
-                if txt:
-                    st.session_state.wishes.append({"txt": txt, "date": datetime.now()})
-                    st.success("Đã gửi!")
+        with c_add:
+            st.markdown("### ✨ Cột mốc mới")
+            with st.form("add_event"):
+                title = st.text_input("Sự kiện")
+                desc = st.text_area("Mô tả ngắn")
+                d = st.date_input("Ngày diễn ra")
+                icon = st.selectbox("Biểu tượng", ["❤️", "✈️", "🏠", "💍", "🎉", "🚗", "🍜"])
+                if st.form_submit_button("Ghim lên tường"):
+                    st.session_state.timeline.append({"date": d, "title": title, "desc": desc, "icon": icon})
+                    # Sắp xếp lại theo thời gian
+                    st.session_state.timeline.sort(key=lambda x: x['date'], reverse=True)
                     st.rerun()
         
-        st.markdown("<br>", unsafe_allow_html=True)
+        with c_view:
+            st.markdown("### 🗓️ Dòng thời gian")
+            # Sắp xếp timeline mới nhất lên đầu
+            sorted_timeline = sorted(st.session_state.timeline, key=lambda x: x['date'], reverse=True)
+            
+            for event in sorted_timeline:
+                st.markdown(f"""
+                <div class="timeline-item">
+                    <div class="timeline-icon">{event['icon']}</div>
+                    <div class="timeline-date">{event['date'].strftime('Ngày %d tháng %m năm %Y')}</div>
+                    <h3 style="margin: 5px 0; font-size:1.2rem;">{event['title']}</h3>
+                    <p style="color:#666; font-style:italic;">{event['desc']}</p>
+                </div>
+                """, unsafe_allow_html=True)
 
-        if st.session_state.wishes:
-            for i, w in enumerate(st.session_state.wishes):
-                col_content, col_delete = st.columns([8, 1])
-                with col_content:
+    # === TAB 3: ENVELOPE (Time Capsule) ===
+    with tab3:
+        st.markdown("<h3 style='text-align:center'>Gửi tin nhắn cho chính mình</h3>", unsafe_allow_html=True)
+        
+        with st.expander("✍️ Viết thư tay"):
+            with st.form("wish_form"):
+                txt = st.text_area("Nội dung:")
+                unlock = st.date_input("Ngày mở:", date.today())
+                if st.form_submit_button("Dán tem & Gửi"):
+                    st.session_state.wishes.append({"txt": txt, "date": date.today(), "unlock": unlock})
+                    st.rerun()
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        cols_w = st.columns(2)
+        for i, w in enumerate(st.session_state.wishes):
+            today = date.today()
+            is_locked = today < w['unlock']
+            
+            with cols_w[i % 2]:
+                if is_locked:
+                    days_left = (w['unlock'] - today).days
                     st.markdown(f"""
-                    <div class="content-card">
-                        <span style="font-weight:bold; color:#ff758c;">📅 {w['date'].strftime('%d/%m/%Y')}</span><br>
-                        {w['txt']}
+                    <div class="envelope locked">
+                        <div style="font-size:3rem;">🔒</div>
+                        <h4>Thư chưa đến ngày mở</h4>
+                        <p>Còn {days_left} ngày nữa</p>
+                        <small>Gửi ngày: {w['date'].strftime('%d/%m/%Y')}</small>
                     </div>
                     """, unsafe_allow_html=True)
-                with col_delete:
-                    st.markdown("<br>", unsafe_allow_html=True) 
-                    if st.button("❌", key=f"del_wish_{i}"):
+                else:
+                    st.markdown(f"""
+                    <div class="envelope unlocked">
+                        <div style="font-size:3rem;">💌</div>
+                        <h4>Thư của quá khứ</h4>
+                        <p style="font-family:'Dancing Script'; font-size:1.2rem;">"{w['txt']}"</p>
+                        <small>Đã mở khóa: {w['unlock'].strftime('%d/%m/%Y')}</small>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    if st.button("Đốt thư", key=f"del_w_{i}"):
                         st.session_state.wishes.pop(i)
                         st.rerun()
-        else:
-            st.info("Chưa có điều ước nào.")
 
 if __name__ == "__main__":
     main()
