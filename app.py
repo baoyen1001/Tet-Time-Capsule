@@ -32,53 +32,67 @@ if 'goals' not in st.session_state:
 if 'wishes' not in st.session_state:
     st.session_state.wishes = []
 
-# --- 4. CSS & HIỆU ỨNG TỰ ĐỘNG (AUTO) ---
+# --- 4. CSS & HIỆU ỨNG (KHÔNG DÙNG LINK NGOÀI ĐỂ TRÁNH LỖI) ---
 st.markdown("""
     <style>
-    /* Import Font */
     @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Nunito:wght@400;700&family=Pacifico&display=swap');
 
-    /* Nền Gradient Pastel (Đỏ - Hồng - Xanh) */
+    /* Nền Gradient Pastel */
     .stApp {
         background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #a1c4fd 100%);
         background-attachment: fixed;
     }
 
-    /* --- HIỆU ỨNG TỰ ĐỘNG --- */
-    /* 1. Pháo hoa nổ liên tục 2 bên góc trên (Dùng GIF nền trong suốt) */
-    .firework-container {
+    /* --- HIỆU ỨNG HOA RƠI & PHÁO HOA BẰNG EMOJI (SIÊU BỀN) --- */
+    
+    /* 1. Lớp chứa hiệu ứng nền */
+    .effect-container {
         position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none; /* Để không che nút bấm */
-        z-index: 1;
+        top: 0; left: 0; width: 100%; height: 100%;
+        pointer-events: none; z-index: 1;
+        overflow: hidden;
+    }
+
+    /* 2. Định nghĩa hạt rơi (Hoa đào) */
+    .particle {
+        position: absolute;
+        top: -10%;
+        font-size: 25px;
+        animation: fall linear infinite;
     }
     
-    /* 2. Hoa rơi (CSS Animation) */
-    @keyframes falling {
-        0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
-        100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+    @keyframes fall {
+        0% { transform: translateY(0vh) rotate(0deg); opacity: 1; }
+        100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
     }
-    .flower {
-        position: fixed;
-        top: -10%;
-        width: 20px;
-        height: 20px;
-        background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Sakura_flower_icon.svg/1200px-Sakura_flower_icon.svg.png');
-        background-size: cover;
-        z-index: 0;
-        animation: falling 10s linear infinite;
+
+    /* Tạo vị trí ngẫu nhiên cho hoa */
+    .p1 { left: 10%; animation-duration: 10s; animation-delay: 0s; }
+    .p2 { left: 25%; animation-duration: 15s; animation-delay: 2s; font-size: 20px;}
+    .p3 { left: 50%; animation-duration: 12s; animation-delay: 4s; }
+    .p4 { left: 75%; animation-duration: 8s; animation-delay: 1s; font-size: 30px;}
+    .p5 { left: 90%; animation-duration: 18s; animation-delay: 3s; }
+
+    /* 3. Hiệu ứng Pháo hoa (CSS thuần - Tạo vòng tròn nổ) */
+    @keyframes firework {
+        0% { transform: scale(0); opacity: 1; }
+        100% { transform: scale(1.5); opacity: 0; }
     }
-    /* Tạo nhiều bông hoa ở các vị trí khác nhau */
-    .f1 { left: 10%; animation-duration: 8s; animation-delay: 0s; }
-    .f2 { left: 30%; animation-duration: 12s; animation-delay: 2s; }
-    .f3 { left: 70%; animation-duration: 7s; animation-delay: 1s; }
-    .f4 { left: 90%; animation-duration: 10s; animation-delay: 3s; }
+    
+    .firework-css {
+        position: absolute;
+        width: 10px; height: 10px;
+        border-radius: 50%;
+        box-shadow: 
+            0 0 0 5px #ff00de,
+            0 0 0 10px #00d4ff,
+            0 0 0 20px #ff9a9e;
+        animation: firework 2s infinite;
+    }
+    .fw1 { top: 10%; left: 10%; animation-delay: 0.5s; }
+    .fw2 { top: 15%; right: 10%; animation-delay: 1.2s; box-shadow: 0 0 0 5px yellow, 0 0 0 15px red; }
 
     /* --- GIAO DIỆN CHÍNH --- */
-    /* Tiêu đề */
     .hero-title {
         font-family: 'Pacifico', cursive;
         font-size: 4.5rem;
@@ -86,85 +100,65 @@ st.markdown("""
         color: #fff;
         text-shadow: 3px 3px 0px rgba(255, 105, 180, 0.6);
         margin-top: -20px;
-        position: relative;
-        z-index: 10;
+        position: relative; z-index: 10;
+        animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
     }
 
-    /* Card nội dung (Màu trắng mờ sang trọng) */
+    /* Card nội dung */
     .content-card {
-        background: rgba(255, 255, 255, 0.65);
-        backdrop-filter: blur(12px);
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(10px);
         border-radius: 20px;
         padding: 20px;
         margin-bottom: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.8);
-        box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+        border: 1px solid white;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        position: relative; z-index: 10;
         transition: transform 0.2s;
-        position: relative;
-        z-index: 10;
     }
-    .content-card:hover {
-        transform: translateY(-5px);
-        background: rgba(255, 255, 255, 0.85);
-    }
+    .content-card:hover { transform: translateY(-3px); }
 
-    /* Tabs đẹp */
+    /* Tabs */
     .stTabs [data-baseweb="tab-list"] {
-        justify-content: center;
-        gap: 20px;
-        background: rgba(255,255,255,0.3);
-        padding: 10px;
-        border-radius: 50px;
-        margin-bottom: 20px;
-        position: relative; 
-        z-index: 10;
-    }
-    .stTabs [data-baseweb="tab"] {
-        background: transparent;
-        border: none;
-        font-family: 'Nunito', sans-serif;
-        font-weight: bold;
-        font-size: 1.1rem;
-        color: #555;
+        justify-content: center; gap: 20px;
+        background: rgba(255,255,255,0.4);
+        padding: 10px; border-radius: 50px;
+        margin-bottom: 20px; position: relative; z-index: 10;
     }
     .stTabs [aria-selected="true"] {
-        background: white !important;
-        color: #ff9a9e !important;
-        border-radius: 30px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        background: white !important; color: #ff758c !important;
+        border-radius: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
+    div[data-testid="stMarkdownContainer"] p { font-family: 'Nunito', sans-serif; }
 
-    /* Input & Button */
+    /* Button */
     div.stButton > button {
         background: linear-gradient(to right, #ff758c 0%, #ff7eb3 100%);
-        color: white;
-        border: none;
-        border-radius: 20px;
-        font-weight: bold;
-        transition: 0.3s;
+        color: white; border: none; border-radius: 20px;
+        font-weight: bold; padding: 0.5rem 1rem;
+        box-shadow: 0 4px 10px rgba(255, 117, 140, 0.4);
     }
-    div.stButton > button:hover {
-        transform: scale(1.05);
-        box-shadow: 0 5px 15px rgba(255, 117, 140, 0.4);
-    }
+    div.stButton > button:hover { transform: scale(1.05); }
 
-    /* Ẩn Header Streamlit */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
+    /* Ẩn Header */
+    #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
     </style>
     
-    <div class="firework-container">
-        <img src="https://media.giphy.com/media/26tOZ42Mg6pbTUPVS/giphy.gif" style="position: absolute; left: 5%; top: 5%; width: 200px; opacity: 0.8;">
-        <img src="https://media.giphy.com/media/26tOZ42Mg6pbTUPVS/giphy.gif" style="position: absolute; right: 5%; top: 10%; width: 200px; opacity: 0.8;">
-        <img src="https://i.pinimg.com/originals/83/66/6d/83666d6e7115ba547847c50a109a1391.gif" style="position: absolute; left: 40%; bottom: 0; width: 300px; opacity: 0.5;">
+    <div class="effect-container">
+        <div class="particle p1">🌸</div>
+        <div class="particle p2">✨</div>
+        <div class="particle p3">🌸</div>
+        <div class="particle p4">🍀</div>
+        <div class="particle p5">🌸</div>
+        
+        <div class="firework-css fw1"></div>
+        <div class="firework-css fw2"></div>
     </div>
-    
-    <div class="flower f1"></div>
-    <div class="flower f2"></div>
-    <div class="flower f3"></div>
-    <div class="flower f4"></div>
-
 """, unsafe_allow_html=True)
 
 # --- 5. HÀM CLOUDINARY ---
@@ -185,7 +179,7 @@ def upload_media(file, caption, author):
 def main():
     # Header
     st.markdown("<div class='hero-title'>Tết 2026: Bảo & Yến ❤️</div>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align:center; color:#fff; font-weight:bold; position:relative; z-index:10;'>🌸 Xuân Bính Ngọ - Vạn Sự Như Ý 🌸</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align:center; color:white; font-weight:bold; position:relative; z-index:10; font-size:1.2rem;'>🌸 Xuân Bính Ngọ - Bên Nhau Trọn Đời 🌸</p>", unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
     # Tabs
@@ -193,7 +187,6 @@ def main():
 
     # === TAB 1: THƯ VIỆN ẢNH ===
     with tab1:
-        # Form upload gọn gàng trong Expander
         with st.expander("📤 Đăng ảnh/video mới (Click để mở)", expanded=False):
             with st.form("up_form", clear_on_submit=True):
                 c1, c2 = st.columns([1, 2])
@@ -208,7 +201,6 @@ def main():
                             time.sleep(1)
                             st.rerun()
 
-        # Hiển thị Gallery
         media = get_media()
         if not media:
             st.info("Chưa có ảnh nào.")
@@ -237,9 +229,8 @@ def main():
                 </div>
                 """, unsafe_allow_html=True)
 
-    # === TAB 2: MỤC TIÊU (CHECKLIST) ===
+    # === TAB 2: MỤC TIÊU ===
     with tab2:
-        # Form thêm
         c_add1, c_add2, c_add3 = st.columns([3, 1, 1])
         with c_add1:
             new_task = st.text_input("Mục tiêu mới", label_visibility="collapsed", placeholder="Nhập mục tiêu...")
@@ -272,11 +263,10 @@ def main():
                 st.session_state.goals.pop(i)
                 st.rerun()
 
-    # === TAB 3: ĐIỀU ƯỚC (CÓ NÚT XÓA) ===
+    # === TAB 3: ĐIỀU ƯỚC ===
     with tab3:
         st.markdown("<h3 style='text-align:center; color:#fff; font-family:Nunito'>💌 Gửi Tín Hiệu Vào Vũ Trụ</h3>", unsafe_allow_html=True)
         
-        # Form nhập điều ước
         with st.form("wish"):
             txt = st.text_area("Điều ước 2026:", height=100)
             if st.form_submit_button("Gửi đi ❤️"):
@@ -287,12 +277,9 @@ def main():
         
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # Danh sách điều ước (Có nút xóa)
         if st.session_state.wishes:
             for i, w in enumerate(st.session_state.wishes):
-                # Chia cột: Nội dung rộng (8 phần), Nút xóa nhỏ (1 phần)
                 col_content, col_delete = st.columns([8, 1])
-                
                 with col_content:
                     st.markdown(f"""
                     <div class="content-card">
@@ -300,15 +287,13 @@ def main():
                         {w['txt']}
                     </div>
                     """, unsafe_allow_html=True)
-                
                 with col_delete:
-                    # Nút xóa căn giữa theo chiều dọc
                     st.markdown("<br>", unsafe_allow_html=True) 
                     if st.button("❌", key=f"del_wish_{i}"):
                         st.session_state.wishes.pop(i)
                         st.rerun()
         else:
-            st.info("Chưa có điều ước nào. Hãy viết điều đầu tiên đi!")
+            st.info("Chưa có điều ước nào.")
 
 if __name__ == "__main__":
     main()
